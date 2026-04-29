@@ -12,24 +12,23 @@ module.exports = async (req, res) => {
       const chatId = message.chat.id;
       const userText = message.text;
 
-      // МҰНДА: v1 нұсқасы және gemini-1.5-flash моделі қолданылды
+      // НАҚТЫ ОСЫ ЖОЛ ТҮЗЕТІЛДІ: v1beta және gemini-1.5-flash қойылды
       const response = await axios.post(
-        `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
         {
           contents: [{ parts: [{ text: userText }] }]
         }
       );
 
-      // Боттың жауабын алу
       const botReply = response.data.candidates[0].content.parts[0].text;
 
-      // Телеграмға жіберу
       await axios.post(`https://api.telegram.org/bot${token}/sendMessage`, {
         chat_id: chatId,
         text: botReply
       });
 
     } catch (error) {
+      // Қате болса, логқа толық мәлімет шығару
       console.error('API Error:', error.response ? JSON.stringify(error.response.data) : error.message);
     }
     return res.status(200).send('ok');
