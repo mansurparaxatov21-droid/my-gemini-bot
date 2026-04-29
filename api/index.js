@@ -1,26 +1,36 @@
-const TeleBot = require('telebot');
-const { GoogleGenerativeAI } = require('@google/generative-ai');
+const axios = require('axios');
 
-const bot = new TeleBot(process.env.TELEGRAM_BOT_TOKEN);
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-
-bot.on('text', async (msg) => {
-    try {
-        const model = genAI.getGenerativeModel({ model: "gemini-pro" });
-        const result = await model.generateContent(msg.text);
-        const response = await result.response;
-        return bot.sendMessage(msg.from.id, response.text());
-    } catch (error) {
-        console.error(error);
-    }
-});
-
-// Vercel үшін Webhook функциясы
 module.exports = async (req, res) => {
-    if (req.method === 'POST') {
-        await bot.processUpdate(req.body);
-        res.status(200).send('OK');
-    } else {
-        res.status(200).send('Бот жұмыс істеп тұр!');
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  const apiKey = process.env.GEMINI_API_KEY;
+
+  if (req.method === 'POST') {
+    try {
+      const { message } = req.body;
+      if (!message || !message.text) return res.status(200).send('ok');
+
+      const chatId = message.chat.id;
+      const userText = message.text;
+
+      // Gemini-ге жибериў
+      const response = await axios.post(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+        { contents: [{ parts: [{ text: userText }] }] }
+      );
+
+      const botReply = response.data.candidates[0].content.parts[0].text;
+
+      // Телеграмға қайтарыў
+      await axios.post(`https://api.telegram.org/bot${token}/sendMessage`, {
+        chat_id: chatId,
+        text: botReply
+      });
+
+    } catch (error) {
+      // Қәте шықса, оны логқа жазамыз
+      console.error('Қәте жүз берди:', error.response ? error.response.data : error.message);
     }
+    return res.status(200).send('ok');
+  }
+  res.status(200).send('Бот ислеп тур!');
 };
