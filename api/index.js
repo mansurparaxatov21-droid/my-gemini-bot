@@ -12,7 +12,6 @@ module.exports = async (req, res) => {
       const chatId = message.chat.id;
       const userText = message.text;
 
-      // Gemini API-ге сұраныс жіберу
       const response = await axios.post(
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
         { contents: [{ parts: [{ text: userText }] }] }
@@ -20,16 +19,15 @@ module.exports = async (req, res) => {
 
       const botReply = response.data.candidates[0].content.parts[0].text;
 
-      // Телеграмға жауапты қайтару
       await axios.post(`https://api.telegram.org/bot${token}/sendMessage`, {
         chat_id: chatId,
         text: botReply
       });
 
     } catch (error) {
-      console.error('Қате шықты:', error.response ? error.response.data : error.message);
+      console.error('Қате:', error.response ? error.response.data : error.message);
     }
     return res.status(200).send('ok');
   }
-  res.status(200).send('Бот дайын!');
+  res.status(200).send('Бот жұмыс істеп тұр!');
 };
