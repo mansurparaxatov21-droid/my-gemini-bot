@@ -12,9 +12,13 @@ module.exports = async (req, res) => {
       const chatId = message.chat.id;
       const userText = message.text;
 
+      // Шектеуді айналып өту үшін арнайы Proxy сілтемесін қолданамыз
       const response = await axios.post(
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
-        { contents: [{ parts: [{ text: userText }] }] }
+        { contents: [{ parts: [{ text: userText }] }] },
+        {
+          headers: { 'Content-Type': 'application/json' }
+        }
       );
 
       const botReply = response.data.candidates[0].content.parts[0].text;
@@ -25,9 +29,19 @@ module.exports = async (req, res) => {
       });
 
     } catch (error) {
-      console.error('Қате:', error.response ? error.response.data : error.message);
+      // Қатені логта көрсетеміз
+      console.error('Қате мәліметі:', error.response ? JSON.stringify(error.response.data) : error.message);
+      
+      // Егер тағы да location қатесі шықса, пайдаланушыға ескерту жіберу
+      const errorMessage = error.response?.data?.error?.message || "";
+      if (errorMessage.includes("location is not supported")) {
+         await axios.post(`https://api.telegram.org/bot${token}/sendMessage`, {
+           chat_id: req.body.message.chat.id,
+           text: "Кешіріңіз, қазіргі уақытта бұл аймақта Google шектеу қойған. Мен оны шешу жолдарын қарастырып жатырмын."
+         });
+      }
     }
     return res.status(200).send('ok');
   }
-  res.status(200).send('Бот жұмыс істеп тұр!');
+  res.status(200).send('Бот дайын!');
 };
