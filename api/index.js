@@ -2,7 +2,8 @@ const { GoogleGenerativeAI } = require("@google/generative-ai");
 const axios = require("axios");
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+// Мұнда "gemini-pro" деп жазылуы керек
+const model = genAI.getGenerativeModel({ model: "gemini-pro" });
 
 module.exports = async (req, res) => {
   const token = process.env.TELEGRAM_BOT_TOKEN;
@@ -13,7 +14,8 @@ module.exports = async (req, res) => {
       if (!message || !message.text) return res.status(200).send('ok');
 
       const result = await model.generateContent(message.text);
-      const botReply = result.response.text();
+      const response = await result.response;
+      const botReply = response.text();
 
       await axios.post(`https://api.telegram.org/bot${token}/sendMessage`, {
         chat_id: message.chat.id,
@@ -21,9 +23,9 @@ module.exports = async (req, res) => {
       });
 
     } catch (error) {
-      console.error("Error:", error.message);
+      console.error("API Error:", error.message);
     }
     return res.status(200).send('ok');
   }
-  res.status(200).send('Бот жұмыс істеп тұр!');
+  res.status(200).send('Бот дайын!');
 };
